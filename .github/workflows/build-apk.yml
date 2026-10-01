@@ -1,0 +1,77 @@
+name: Build Kids Cartoons Release APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode release keystore
+        run: |
+          set -e
+          python3 -c "
+          import base64, pathlib
+          d = pathlib.Path('assets/kids-release.jks.b64').read_text().strip()
+          d += '=' * ((-len(d)) % 4)
+          pathlib.Path('android/app/kids-release.jks').write_bytes(base64.b64decode(d))
+          "
+          test -f android/app/kids-release.jks
+          ls -la android/app/kids-release.jks
+
+      - name: Create launcher icons
+        run: |
+          set -e
+          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            mkdir -p android/app/src/main/res/mipmap-$d
+          done
+          # Simple orange square icon with play symbol via convert
+          convert -size 192x192 xc:'#FF6B35' -fill white -draw 'circle 96,96 96,50' -fill '#FF6B35' -draw 'polygon 80,70 80,122 130,96' android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          ls -la android/app/src/main/res/mipmap-*/
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Build Signed Release APK
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: "KidsCartoons2026!"
+          KEY_ALIAS: "kidscartoons"
+          KEY_PASSWORD: "KidsCartoons2026!"
+        run: |
+          gradle assembleRelease --no-daemon --stacktrace --console=plain
+          ls -lh app/build/outputs/apk/release/
+
+      - name: Verify signed APK
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK"
+          ls -lh "$APK"
+          unzip -l "$APK" | grep -E "META-INF/.*\.(RSA|SF|MF)" || true
+          echo "RELEASE APK READY"
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KidsEnglishCartoons-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
