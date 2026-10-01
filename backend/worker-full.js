@@ -1,203 +1,141 @@
 /**
- * Kids English Cartoons Worker – paste this entire file into Cloudflare Dashboard → Edit code
- * URL: https://acrtoonfarinaz.farshadhelboys.workers.dev
- *
- * - Curated safe English cartoons for ages 4–8 (direct MP4, play + download)
- * - Auto-discovers more public-domain English cartoons from Archive.org
- * - Merges and returns full list for the Android app
+ * Paste into Cloudflare Worker: https://acrtoonfarinaz.farshadhelboys.workers.dev
+ * Modern English kids cartoons (official YouTube) for ages 4–8
+ * Peppa Pig, PAW Patrol, Super Wings + optional free direct videos
  */
 
-const CURATED = [
+const CARTOONS = [
   {
-    id: "kidsongs-farm",
-    title: "Kidsongs - A Day At Old MacDonald's Farm",
-    description: "Fun English songs and farm animals for kids ages 4-8. Learn animal names and simple songs.",
-    ageMin: 4, ageMax: 8, durationSec: 1800,
-    videoUrl: "https://archive.org/download/kidsongs-series/A.%20Kidsongs%20A%20Day%20At%20Old%20MacDonald%20s%20Farm.mp4",
-    thumbnailUrl: "https://archive.org/services/img/kidsongs-series",
-    category: "Songs", language: "English", source: "Archive.org"
+    id: "peppa-sharing",
+    title: "Peppa Pig – Sharing Is Caring (Full Episodes)",
+    description: "Official Peppa Pig English episodes. Perfect for ages 4–8.",
+    ageMin: 4, ageMax: 8, durationSec: 3600,
+    youtubeId: "e5Ef8rOUWUo",
+    videoUrl: "https://www.youtube.com/watch?v=e5Ef8rOUWUo",
+    thumbnailUrl: "https://img.youtube.com/vi/e5Ef8rOUWUo/hqdefault.jpg",
+    category: "Peppa Pig", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "somewhere-dreamland",
-    title: "Somewhere in Dreamland (1936)",
-    description: "Classic public domain color cartoon. Soft story perfect for young children.",
-    ageMin: 4, ageMax: 8, durationSec: 540,
-    videoUrl: "https://archive.org/download/pdcartooncollection/Fleischer%20Color%20Classic%20Somewhere%20in%20Dreamland%201936)%20(old%20cartoon%20vintage%20public%20domain).mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Classic", language: "English", source: "Archive.org"
+    id: "peppa-summer",
+    title: "Peppa Pig – Summer Adventures",
+    description: "Official full episodes compilation from Peppa Pig channel.",
+    ageMin: 4, ageMax: 8, durationSec: 14400,
+    youtubeId: "6-xa1WJ4cjc",
+    videoUrl: "https://www.youtube.com/watch?v=6-xa1WJ4cjc",
+    thumbnailUrl: "https://img.youtube.com/vi/6-xa1WJ4cjc/hqdefault.jpg",
+    category: "Peppa Pig", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "little-lambkins",
-    title: "Little Lambkins (1940)",
-    description: "Fleischer Color Classic - gentle adventure for preschoolers.",
-    ageMin: 4, ageMax: 7, durationSec: 480,
-    videoUrl: "https://archive.org/download/pdcartooncollection/Fleischer%20Color%20Classic%20Little%20Lambkins%201940%20(old%20free%20cartoon%20public%20domain).mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Classic", language: "English", source: "Archive.org"
+    id: "peppa-secret-door",
+    title: "Peppa Pig – Secret Door & Mystery Stairs",
+    description: "Official Peppa Pig English full episodes.",
+    ageMin: 4, ageMax: 8, durationSec: 7200,
+    youtubeId: "Uc8knK0ONgk",
+    videoUrl: "https://www.youtube.com/watch?v=Uc8knK0ONgk",
+    thumbnailUrl: "https://img.youtube.com/vi/Uc8knK0ONgk/hqdefault.jpg",
+    category: "Peppa Pig", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "old-mother-hubbard",
-    title: "Old Mother Hubbard (1935)",
-    description: "ComiColor cartoon based on the nursery rhyme. Great for English learning.",
-    ageMin: 4, ageMax: 8, durationSec: 420,
-    videoUrl: "https://archive.org/download/pdcartooncollection/COMICOLOR%20-%201935%20-%20_Old%20Mother%20Hubbard_.mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Nursery", language: "English", source: "Archive.org"
+    id: "peppa-walkie",
+    title: "Peppa Pig – Walkie Talkies (1 Hour)",
+    description: "Official Peppa Pig full episodes compilation.",
+    ageMin: 4, ageMax: 8, durationSec: 3600,
+    youtubeId: "ESCtnG1Jxrk",
+    videoUrl: "https://www.youtube.com/watch?v=ESCtnG1Jxrk",
+    thumbnailUrl: "https://img.youtube.com/vi/ESCtnG1Jxrk/hqdefault.jpg",
+    category: "Peppa Pig", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "simple-simon",
-    title: "Simple Simon (ComiColor)",
-    description: "Fun short cartoon with simple English dialogue and music.",
-    ageMin: 4, ageMax: 8, durationSec: 360,
-    videoUrl: "https://archive.org/download/pdcartooncollection/ComiColor_%20Simple%20Simon.mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Nursery", language: "English", source: "Archive.org"
+    id: "paw-mighty-twins",
+    title: "PAW Patrol – Mighty Pups Meet the Mighty Twins",
+    description: "Official PAW Patrol full episode. English for kids 4–8.",
+    ageMin: 4, ageMax: 8, durationSec: 1400,
+    youtubeId: "NcrX0Kv9YTQ",
+    videoUrl: "https://www.youtube.com/watch?v=NcrX0Kv9YTQ",
+    thumbnailUrl: "https://img.youtube.com/vi/NcrX0Kv9YTQ/hqdefault.jpg",
+    category: "PAW Patrol", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "brementown-musicians",
-    title: "The Bremen Town Musicians",
-    description: "UB Iwerks ComiColor – classic fairy tale cartoon, safe for young kids.",
-    ageMin: 4, ageMax: 8, durationSec: 480,
-    videoUrl: "https://archive.org/download/pdcartooncollection/Brementown%20Musicians%20UB%20Iwerks%20ComiColor.mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Fairy Tale", language: "English", source: "Archive.org"
+    id: "paw-jungle",
+    title: "PAW Patrol – Jungle Pups Hidden Jungle",
+    description: "Official PAW Patrol full episode from official channel.",
+    ageMin: 4, ageMax: 8, durationSec: 1400,
+    youtubeId: "D33Tg3A-L4E",
+    videoUrl: "https://www.youtube.com/watch?v=D33Tg3A-L4E",
+    thumbnailUrl: "https://img.youtube.com/vi/D33Tg3A-L4E/hqdefault.jpg",
+    category: "PAW Patrol", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "hawaiian-birds",
-    title: "Hawaiian Birds (1936)",
-    description: "Fleischer Color Classic – gentle musical cartoon suitable for young children.",
-    ageMin: 4, ageMax: 8, durationSec: 420,
-    videoUrl: "https://archive.org/download/pdcartooncollection/Fleischer%20cartoon%20Color%20Classic%20Hawaiian%20Birds%201936(old%20cartoons%20vintage%20public%20domain).mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Classic", language: "English", source: "Archive.org"
+    id: "paw-sea-octopus",
+    title: "PAW Patrol – Sea Patrol Baby Octopus",
+    description: "Official full episode. Great English for preschoolers.",
+    ageMin: 4, ageMax: 8, durationSec: 1400,
+    youtubeId: "bFkuy5yAMig",
+    videoUrl: "https://www.youtube.com/watch?v=bFkuy5yAMig",
+    thumbnailUrl: "https://img.youtube.com/vi/bFkuy5yAMig/hqdefault.jpg",
+    category: "PAW Patrol", language: "English", source: "YouTube Official", type: "youtube"
   },
   {
-    id: "greedy-humpty",
-    title: "Greedy Humpty Dumpty (1936)",
-    description: "Fleischer Color Classic nursery rhyme cartoon – English learning friendly.",
-    ageMin: 4, ageMax: 8, durationSec: 420,
-    videoUrl: "https://archive.org/download/pdcartooncollection/Fleischer%20cartoon%20Color%20Classic%20Greedy%20Humpty%20Dumpty%201936%20(old%20cartoon%20vintage%20public%20domain).mp4",
-    thumbnailUrl: "https://archive.org/services/img/pdcartooncollection",
-    category: "Nursery", language: "English", source: "Archive.org"
+    id: "paw-fire-monster",
+    title: "PAW Patrol – Fire Rescue Movie Monster",
+    description: "Official PAW Patrol English episode.",
+    ageMin: 4, ageMax: 8, durationSec: 1400,
+    youtubeId: "EbJBUniF99A",
+    videoUrl: "https://www.youtube.com/watch?v=EbJBUniF99A",
+    thumbnailUrl: "https://img.youtube.com/vi/EbJBUniF99A/hqdefault.jpg",
+    category: "PAW Patrol", language: "English", source: "YouTube Official", type: "youtube"
+  },
+  {
+    id: "superwings-delivery",
+    title: "Super Wings – The Delivery King",
+    description: "Official Super Wings English episode. Adventure for ages 4–8.",
+    ageMin: 4, ageMax: 8, durationSec: 670,
+    youtubeId: "JLZW0G3ryeM",
+    videoUrl: "https://www.youtube.com/watch?v=JLZW0G3ryeM",
+    thumbnailUrl: "https://img.youtube.com/vi/JLZW0G3ryeM/hqdefault.jpg",
+    category: "Super Wings", language: "English", source: "YouTube Official", type: "youtube"
+  },
+  {
+    id: "superwings-heritage",
+    title: "Super Wings – Exploring World Heritage",
+    description: "Official Super Wings best episodes compilation (English).",
+    ageMin: 4, ageMax: 8, durationSec: 2640,
+    youtubeId: "Eza1Xyijikc",
+    videoUrl: "https://www.youtube.com/watch?v=Eza1Xyijikc",
+    thumbnailUrl: "https://img.youtube.com/vi/Eza1Xyijikc/hqdefault.jpg",
+    category: "Super Wings", language: "English", source: "YouTube Official", type: "youtube"
+  },
+  {
+    id: "superwings-ep02",
+    title: "Super Wings – Great Gondolas (ENG)",
+    description: "Official Super Wings English episode.",
+    ageMin: 4, ageMax: 8, durationSec: 720,
+    youtubeId: "aWZJXi3nuFM",
+    videoUrl: "https://www.youtube.com/watch?v=aWZJXi3nuFM",
+    thumbnailUrl: "https://img.youtube.com/vi/aWZJXi3nuFM/hqdefault.jpg",
+    category: "Super Wings", language: "English", source: "YouTube Official", type: "youtube"
+  },
+  {
+    id: "superwings-bath",
+    title: "Super Wings – Boonying's Bath Time (ENG)",
+    description: "Official Super Wings English episode for young kids.",
+    ageMin: 4, ageMax: 8, durationSec: 720,
+    youtubeId: "C1dg0IqouRA",
+    videoUrl: "https://www.youtube.com/watch?v=C1dg0IqouRA",
+    thumbnailUrl: "https://img.youtube.com/vi/C1dg0IqouRA/hqdefault.jpg",
+    category: "Super Wings", language: "English", source: "YouTube Official", type: "youtube"
   }
 ];
 
-// Block titles that are not suitable for ages 4-8
-const BLOCK = [/horror/i, /terror/i, /war\b/i, /kill/i, /death/i, /adult/i, /nude/i, /sex/i, /violent/i, /gore/i, /zombie/i, /slasher/i];
-
-function isKidSafe(title, desc) {
-  const t = (title || "") + " " + (desc || "");
-  return !BLOCK.some((re) => re.test(t));
-}
-
-async function searchArchive(query, rows = 12) {
-  const url =
-    "https://archive.org/advancedsearch.php?q=" +
-    encodeURIComponent(query) +
-    "&fl[]=identifier&fl[]=title&fl[]=description&fl[]=year&fl[]=mediatype" +
-    "&sort[]=downloads+desc&rows=" +
-    rows +
-    "&page=1&output=json";
-  try {
-    const res = await fetch(url, { headers: { "User-Agent": "KidsCartoonsWorker/1.0" } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.response && data.response.docs) || [];
-  } catch (e) {
-    return [];
-  }
-}
-
-async function findMp4(identifier) {
-  try {
-    const res = await fetch("https://archive.org/metadata/" + encodeURIComponent(identifier), {
-      headers: { "User-Agent": "KidsCartoonsWorker/1.0" }
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const files = data.files || [];
-    // Prefer smaller H.264 / MPEG4 under ~200MB for kids app
-    const mp4s = files.filter((f) => {
-      const n = (f.name || "").toLowerCase();
-      const fmt = (f.format || "").toLowerCase();
-      return n.endsWith(".mp4") || fmt.includes("mpeg4") || fmt.includes("h.264");
-    });
-    if (!mp4s.length) return null;
-    // Prefer medium size
-    mp4s.sort((a, b) => {
-      const sa = parseInt(a.size || "0", 10);
-      const sb = parseInt(b.size || "0", 10);
-      return sa - sb;
-    });
-    const pick = mp4s.find((f) => parseInt(f.size || "0", 10) > 500000) || mp4s[0];
-    if (!pick || !pick.name) return null;
-    return "https://archive.org/download/" + encodeURIComponent(identifier) + "/" + encodeURIComponent(pick.name);
-  } catch (e) {
-    return null;
-  }
-}
-
-async function discoverMore() {
-  const queries = [
-    'collection:(animationandcartoons) AND mediatype:movies AND language:eng',
-    'collection:(pdcartooncollection) OR title:("color classic") AND mediatype:movies',
-    '(title:kidsongs OR title:("nursery") OR subject:children) AND mediatype:movies AND language:eng'
-  ];
-  const seen = new Set(CURATED.map((c) => c.id));
-  const found = [];
-
-  for (const q of queries) {
-    if (found.length >= 15) break;
-    const docs = await searchArchive(q, 10);
-    for (const doc of docs) {
-      if (found.length >= 15) break;
-      const id = doc.identifier;
-      if (!id || seen.has(id)) continue;
-      if (!isKidSafe(doc.title, doc.description)) continue;
-      seen.add(id);
-      const videoUrl = await findMp4(id);
-      if (!videoUrl) continue;
-      found.push({
-        id: id,
-        title: (doc.title || id).toString().slice(0, 120),
-        description: ((doc.description || "Public domain English cartoon suitable for young children.").toString()).slice(0, 280),
-        ageMin: 4,
-        ageMax: 8,
-        durationSec: 0,
-        videoUrl: videoUrl,
-        thumbnailUrl: "https://archive.org/services/img/" + encodeURIComponent(id),
-        category: "Discovered",
-        language: "English",
-        source: "Archive.org (auto)"
-      });
-    }
-  }
-  return found;
-}
-
-async function buildList(forceDiscover) {
-  let extra = [];
-  try {
-    extra = await discoverMore();
-  } catch (e) {
-    extra = [];
-  }
-  const all = CURATED.concat(extra);
-  // dedupe by id
-  const map = new Map();
-  for (const c of all) map.set(c.id, c);
-  return Array.from(map.values());
-}
-
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
     const cors = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=3600"
+      "Cache-Control": "public, max-age=1800"
     };
 
     if (request.method === "OPTIONS") {
@@ -205,42 +143,30 @@ export default {
     }
 
     if (url.pathname === "/" || url.pathname === "/cartoons") {
-      const force = url.searchParams.get("refresh") === "1";
-      const list = await buildList(force);
       const q = (url.searchParams.get("q") || "").toLowerCase();
-      const filtered = q
-        ? list.filter(
-            (c) =>
-              c.title.toLowerCase().includes(q) ||
-              (c.description || "").toLowerCase().includes(q) ||
-              (c.category || "").toLowerCase().includes(q)
-          )
-        : list;
-
+      let list = CARTOONS;
+      if (q) {
+        list = CARTOONS.filter(
+          (c) =>
+            c.title.toLowerCase().includes(q) ||
+            c.description.toLowerCase().includes(q) ||
+            c.category.toLowerCase().includes(q)
+        );
+      }
       return new Response(
         JSON.stringify({
           updatedAt: new Date().toISOString(),
-          count: filtered.length,
-          curated: CURATED.length,
-          discovered: filtered.length - CURATED.length,
-          cartoons: filtered
+          count: list.length,
+          cartoons: list
         }),
         { headers: cors }
       );
     }
 
     if (url.pathname === "/health") {
-      return new Response(
-        JSON.stringify({ ok: true, curated: CURATED.length, worker: "acrtoonfarinaz" }),
-        { headers: cors }
-      );
+      return new Response(JSON.stringify({ ok: true, cartoons: CARTOONS.length }), { headers: cors });
     }
 
     return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: cors });
-  },
-
-  async scheduled(event, env, ctx) {
-    // Daily cron: warm discovery so next app open is faster
-    ctx.waitUntil(buildList(true));
   }
 };

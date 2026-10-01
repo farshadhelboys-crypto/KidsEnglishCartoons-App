@@ -1,6 +1,9 @@
 package com.kidsenglish.cartoons.ui
 
-import android.content.Context
+import android.annotation.SuppressLint
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -50,56 +53,7 @@ fun KidsCartoonsApp() {
     var selected by remember { mutableStateOf<Cartoon?>(null) }
     var downloadingId by remember { mutableStateOf<String?>(null) }
 
-    // Fallback sample data (works offline / before Worker is deployed)
-    val fallback = remember {
-        listOf(
-            Cartoon(
-                id = "kidsongs-farm",
-                title = "Kidsongs - A Day At Old MacDonald's Farm",
-                description = "Fun English songs and farm animals for kids ages 4-8. Learn animal names and simple songs.",
-                durationSec = 1800,
-                videoUrl = "https://archive.org/download/kidsongs-series/A.%20Kidsongs%20A%20Day%20At%20Old%20MacDonald%20s%20Farm.mp4",
-                thumbnailUrl = "https://archive.org/services/img/kidsongs-series",
-                category = "Songs"
-            ),
-            Cartoon(
-                id = "somewhere-dreamland",
-                title = "Somewhere in Dreamland (1936)",
-                description = "Classic public domain color cartoon. Soft story perfect for young children.",
-                durationSec = 540,
-                videoUrl = "https://archive.org/download/pdcartooncollection/Fleischer%20Color%20Classic%20Somewhere%20in%20Dreamland%201936)%20(old%20cartoon%20vintage%20public%20domain).mp4",
-                thumbnailUrl = "https://archive.org/services/img/pdcartooncollection",
-                category = "Classic"
-            ),
-            Cartoon(
-                id = "little-lambkins",
-                title = "Little Lambkins (1940)",
-                description = "Fleischer Color Classic - gentle adventure for preschoolers.",
-                durationSec = 480,
-                videoUrl = "https://archive.org/download/pdcartooncollection/Fleischer%20Color%20Classic%20Little%20Lambkins%201940%20(old%20free%20cartoon%20public%20domain).mp4",
-                thumbnailUrl = "https://archive.org/services/img/pdcartooncollection",
-                category = "Classic"
-            ),
-            Cartoon(
-                id = "old-mother-hubbard",
-                title = "Old Mother Hubbard (1935)",
-                description = "ComiColor cartoon based on the nursery rhyme. Great for English learning.",
-                durationSec = 420,
-                videoUrl = "https://archive.org/download/pdcartooncollection/COMICOLOR%20-%201935%20-%20_Old%20Mother%20Hubbard_.mp4",
-                thumbnailUrl = "https://archive.org/services/img/pdcartooncollection",
-                category = "Nursery"
-            ),
-            Cartoon(
-                id = "simple-simon",
-                title = "Simple Simon (ComiColor)",
-                description = "Fun short cartoon with simple English dialogue and music.",
-                durationSec = 360,
-                videoUrl = "https://archive.org/download/pdcartooncollection/ComiColor_%20Simple%20Simon.mp4",
-                thumbnailUrl = "https://archive.org/services/img/pdcartooncollection",
-                category = "Nursery"
-            )
-        )
-    }
+    val fallback = remember { modernFallback() }
 
     fun refresh() {
         scope.launch {
@@ -120,7 +74,7 @@ fun KidsCartoonsApp() {
                     cartoons = fallback
                     store.saveCartoons(fallback)
                 }
-                error = "Online list unavailable – showing offline samples"
+                error = "Online list unavailable – showing modern offline list"
             } finally {
                 isLoading = false
             }
@@ -128,16 +82,20 @@ fun KidsCartoonsApp() {
     }
 
     LaunchedEffect(Unit) {
-        if (cartoons.isEmpty()) refresh()
-        else if (System.currentTimeMillis() - store.getLastUpdate() > 24 * 60 * 60 * 1000L) refresh()
+        // Always prefer modern list on first open after update
+        if (cartoons.isEmpty() || cartoons.none { it.isYouTube() || it.category.contains("Peppa", true) }) {
+            cartoons = fallback
+            store.saveCartoons(fallback)
+        }
+        refresh()
     }
 
     val filtered = remember(cartoons, searchQuery) {
         if (searchQuery.isBlank()) cartoons
         else cartoons.filter {
             it.title.contains(searchQuery, true) ||
-            it.description.contains(searchQuery, true) ||
-            it.category.contains(searchQuery, true)
+                it.description.contains(searchQuery, true) ||
+                it.category.contains(searchQuery, true)
         }
     }
 
@@ -152,6 +110,7 @@ fun KidsCartoonsApp() {
             localPath = store.getLocalPath(selected!!.id),
             isDownloading = downloadingId == selected!!.id,
             onDownload = {
+                if (!selected!!.canDownload()) return@PlayerScreen
                 scope.launch {
                     downloadingId = selected!!.id
                     try {
@@ -177,7 +136,7 @@ fun KidsCartoonsApp() {
                 title = {
                     Column {
                         Text("Kids English Cartoons", fontWeight = FontWeight.Bold)
-                        Text("Ages 4–8 • Safe & Educational", fontSize = 12.sp, color = Color.White.copy(0.85f))
+                        Text("Peppa • Paw Patrol • Super Wings • Ages 4–8", fontSize = 12.sp, color = Color.White.copy(0.85f))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -204,7 +163,7 @@ fun KidsCartoonsApp() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
-                placeholder = { Text("Search cartoons...") },
+                placeholder = { Text("Search Peppa, Paw Patrol, Super Wings...") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp)
@@ -236,6 +195,117 @@ fun KidsCartoonsApp() {
     }
 }
 
+private fun modernFallback(): List<Cartoon> = listOf(
+    Cartoon(
+        id = "peppa-sharing",
+        title = "Peppa Pig – Sharing Is Caring (Full Episodes)",
+        description = "Official Peppa Pig English episodes. Perfect for ages 4–8.",
+        youtubeId = "e5Ef8rOUWUo",
+        thumbnailUrl = "https://img.youtube.com/vi/e5Ef8rOUWUo/hqdefault.jpg",
+        category = "Peppa Pig",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "peppa-summer",
+        title = "Peppa Pig – Summer Adventures",
+        description = "Official full episodes compilation from Peppa Pig channel.",
+        youtubeId = "6-xa1WJ4cjc",
+        thumbnailUrl = "https://img.youtube.com/vi/6-xa1WJ4cjc/hqdefault.jpg",
+        category = "Peppa Pig",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "peppa-secret-door",
+        title = "Peppa Pig – Secret Door & Mystery Stairs",
+        description = "Official Peppa Pig English full episodes.",
+        youtubeId = "Uc8knK0ONgk",
+        thumbnailUrl = "https://img.youtube.com/vi/Uc8knK0ONgk/hqdefault.jpg",
+        category = "Peppa Pig",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "paw-mighty-twins",
+        title = "PAW Patrol – Mighty Pups Meet the Mighty Twins",
+        description = "Official PAW Patrol full episode. English for kids 4–8.",
+        youtubeId = "NcrX0Kv9YTQ",
+        thumbnailUrl = "https://img.youtube.com/vi/NcrX0Kv9YTQ/hqdefault.jpg",
+        category = "PAW Patrol",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "paw-jungle",
+        title = "PAW Patrol – Jungle Pups Hidden Jungle",
+        description = "Official PAW Patrol full episode from official channel.",
+        youtubeId = "D33Tg3A-L4E",
+        thumbnailUrl = "https://img.youtube.com/vi/D33Tg3A-L4E/hqdefault.jpg",
+        category = "PAW Patrol",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "paw-sea-octopus",
+        title = "PAW Patrol – Sea Patrol Baby Octopus",
+        description = "Official full episode. Great English for preschoolers.",
+        youtubeId = "bFkuy5yAMig",
+        thumbnailUrl = "https://img.youtube.com/vi/bFkuy5yAMig/hqdefault.jpg",
+        category = "PAW Patrol",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "paw-fire-monster",
+        title = "PAW Patrol – Fire Rescue Movie Monster",
+        description = "Official PAW Patrol English episode.",
+        youtubeId = "EbJBUniF99A",
+        thumbnailUrl = "https://img.youtube.com/vi/EbJBUniF99A/hqdefault.jpg",
+        category = "PAW Patrol",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "superwings-delivery",
+        title = "Super Wings – The Delivery King",
+        description = "Official Super Wings English episode. Adventure for ages 4–8.",
+        youtubeId = "JLZW0G3ryeM",
+        thumbnailUrl = "https://img.youtube.com/vi/JLZW0G3ryeM/hqdefault.jpg",
+        category = "Super Wings",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "superwings-heritage",
+        title = "Super Wings – Exploring World Heritage",
+        description = "Official Super Wings best episodes compilation (English).",
+        youtubeId = "Eza1Xyijikc",
+        thumbnailUrl = "https://img.youtube.com/vi/Eza1Xyijikc/hqdefault.jpg",
+        category = "Super Wings",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "superwings-ep02",
+        title = "Super Wings – Great Gondolas (ENG)",
+        description = "Official Super Wings English episode.",
+        youtubeId = "aWZJXi3nuFM",
+        thumbnailUrl = "https://img.youtube.com/vi/aWZJXi3nuFM/hqdefault.jpg",
+        category = "Super Wings",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "superwings-bath",
+        title = "Super Wings – Boonying's Bath Time (ENG)",
+        description = "Official Super Wings English episode for young kids.",
+        youtubeId = "C1dg0IqouRA",
+        thumbnailUrl = "https://img.youtube.com/vi/C1dg0IqouRA/hqdefault.jpg",
+        category = "Super Wings",
+        type = "youtube"
+    ),
+    Cartoon(
+        id = "peppa-walkie",
+        title = "Peppa Pig – Walkie Talkies (1 Hour)",
+        description = "Official Peppa Pig full episodes compilation.",
+        youtubeId = "ESCtnG1Jxrk",
+        thumbnailUrl = "https://img.youtube.com/vi/ESCtnG1Jxrk/hqdefault.jpg",
+        category = "Peppa Pig",
+        type = "youtube"
+    )
+)
+
 @Composable
 fun CartoonCard(cartoon: Cartoon, isDownloaded: Boolean, onClick: () -> Unit) {
     Card(
@@ -247,7 +317,10 @@ fun CartoonCard(cartoon: Cartoon, isDownloaded: Boolean, onClick: () -> Unit) {
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                model = cartoon.thumbnailUrl.ifBlank { null },
+                model = cartoon.thumbnailUrl.ifBlank {
+                    val yid = cartoon.resolvedYoutubeId()
+                    if (yid.isNotBlank()) "https://img.youtube.com/vi/$yid/hqdefault.jpg" else null
+                },
                 contentDescription = null,
                 modifier = Modifier
                     .size(80.dp)
@@ -269,7 +342,9 @@ fun CartoonCard(cartoon: Cartoon, isDownloaded: Boolean, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isDownloaded) {
                         Icon(Icons.Default.DownloadDone, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
-                        Text(" Downloaded", fontSize = 11.sp, color = Color(0xFF4CAF50))
+                        Text(" Offline", fontSize = 11.sp, color = Color(0xFF4CAF50))
+                    } else if (cartoon.isYouTube()) {
+                        Text("Watch online (official)", fontSize = 11.sp, color = Color.Gray)
                     }
                     Spacer(Modifier.width(8.dp))
                     Text("Ages ${cartoon.ageMin}–${cartoon.ageMax}", fontSize = 11.sp, color = Color.Gray)
@@ -280,6 +355,7 @@ fun CartoonCard(cartoon: Cartoon, isDownloaded: Boolean, onClick: () -> Unit) {
     }
 }
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun PlayerScreen(
     cartoon: Cartoon,
@@ -290,30 +366,56 @@ fun PlayerScreen(
     onDownload: () -> Unit
 ) {
     val context = LocalContext.current
-    val playUrl = localPath ?: cartoon.videoUrl
+    val isYt = cartoon.isYouTube()
+    val yid = cartoon.resolvedYoutubeId()
 
-    LaunchedEffect(playUrl) {
-        PlayerHolder.play(context, playUrl, cartoon.title)
+    LaunchedEffect(cartoon.id) {
+        if (!isYt) {
+            val playUrl = localPath ?: cartoon.videoUrl
+            if (playUrl.isNotBlank()) PlayerHolder.play(context, playUrl, cartoon.title)
+        }
     }
 
     Column(Modifier.fillMaxSize().background(Color.Black)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = PlayerHolder.get(ctx)
-                        useController = true
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+            if (isYt && yid.isNotBlank()) {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.mediaPlaybackRequiresUserGesture = false
+                            webChromeClient = WebChromeClient()
+                            webViewClient = WebViewClient()
+                            val html = """
+                                <html><body style="margin:0;background:#000;">
+                                <iframe width="100%" height="100%" style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                                  src="https://www.youtube.com/embed/$yid?playsinline=1&rel=0&modestbranding=1"
+                                  frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowfullscreen></iframe>
+                                </body></html>
+                            """.trimIndent()
+                            loadDataWithBaseURL("https://www.youtube.com", html, "text/html", "utf-8", null)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = PlayerHolder.get(ctx)
+                            useController = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
         Column(
             Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF16213E)))
-                )
+                .background(Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF16213E))))
                 .padding(16.dp)
         ) {
             Text(cartoon.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -326,27 +428,35 @@ fun PlayerScreen(
                     Spacer(Modifier.width(4.dp))
                     Text("Back")
                 }
-                if (!isDownloaded) {
-                    Button(
-                        onClick = onDownload,
-                        enabled = !isDownloading,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4ECDC4))
-                    ) {
-                        if (isDownloading) {
-                            CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Downloading...")
-                        } else {
-                            Icon(Icons.Default.Download, null)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Download")
+                if (cartoon.canDownload()) {
+                    if (!isDownloaded) {
+                        Button(
+                            onClick = onDownload,
+                            enabled = !isDownloading,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4ECDC4))
+                        ) {
+                            if (isDownloading) {
+                                CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Downloading...")
+                            } else {
+                                Icon(Icons.Default.Download, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Download")
+                            }
                         }
+                    } else {
+                        AssistChip(
+                            onClick = {},
+                            label = { Text("Saved offline") },
+                            leadingIcon = { Icon(Icons.Default.DownloadDone, null, Modifier.size(18.dp)) }
+                        )
                     }
                 } else {
                     AssistChip(
                         onClick = {},
-                        label = { Text("Saved offline") },
-                        leadingIcon = { Icon(Icons.Default.DownloadDone, null, Modifier.size(18.dp)) }
+                        label = { Text("Official stream") },
+                        leadingIcon = { Icon(Icons.Default.PlayArrow, null, Modifier.size(18.dp)) }
                     )
                 }
             }
@@ -360,9 +470,7 @@ private fun downloadFile(url: String, dest: File) {
     client.newCall(req).execute().use { resp ->
         if (!resp.isSuccessful) throw Exception("HTTP ${resp.code}")
         resp.body?.byteStream()?.use { input ->
-            FileOutputStream(dest).use { output ->
-                input.copyTo(output)
-            }
+            FileOutputStream(dest).use { output -> input.copyTo(output) }
         }
     }
 }
