@@ -9,8 +9,8 @@ interface ApiService {
     suspend fun getCartoons(): CartoonsResponse
 
     companion object {
-        // Replace with your Cloudflare Worker URL after deploy
-        private const val BASE_URL = "https://kids-english-cartoons.farshadhelboys-crypto.workers.dev/"
+        // User's Cloudflare Worker
+        private const val BASE_URL = "https://acrtoonfarinaz.farshadhelboys.workers.dev/"
 
         fun create(): ApiService {
             return Retrofit.Builder()
